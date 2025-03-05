@@ -3,24 +3,26 @@ import {
   InternalServerErrorException,
   Post,
   Req,
+  Headers,
+  Query,
 } from '@nestjs/common';
 import { Request } from 'express';
-import * as fs from 'fs';
-import { pipeline } from 'stream';
-import { promisify } from 'util';
-
-const pipelineAsync = promisify(pipeline);
+import { StorageService } from 'src/storage/storage.service';
+import { UploadVideoDto } from './dtos/upload-video.dto';
+import * as mime from 'mime-types';
 
 @Controller('video')
 export class VideoController {
-  @Post('/extract-audio')
-  async extractAudio(@Req() request: Request) {
-    const writeStream = fs.createWriteStream('./test.mp4');
-    try {
-      await pipelineAsync(request, writeStream);
-      return { message: 'File uploaded successfully' };
-    } catch (err) {
-      throw new InternalServerErrorException('File upload failed');
-    }
+  constructor(private storageService: StorageService) {}
+
+  @Post('/upload')
+  async uploadVideo(
+    @Req() req: Request,
+    @Query() uploadVideoDto: UploadVideoDto,
+    @Headers('content-type') contentType: string,
+  ) {
+    const { fileName } = uploadVideoDto;
+    const ext = mime.extension(contentType);
+    return await this.storageService.uploadFile(req, `${fileName}.${ext}`);
   }
 }

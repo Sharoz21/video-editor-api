@@ -12,4 +12,8 @@ export class StorageService {
   async uploadFile(stream: Readable, fileName: string) {
     return await this.storageRepo.uploadFile(stream, fileName);
   }
+
+  async getDownloadableLink(fileName: string) {
+    return await this.storageRepo.getDownloadableLink(fileName);
+  }
 }

@@ -1,6 +1,3 @@
-import { IsNotEmpty } from 'class-validator';
+import { BaseVideoDto } from './base-video.dto';
 
-export class UploadVideoDto {
-  @IsNotEmpty()
-  fileName: string;
-}
+export class UploadVideoDto extends BaseVideoDto {}

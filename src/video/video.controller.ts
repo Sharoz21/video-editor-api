@@ -1,19 +1,21 @@
 import {
   Controller,
-  InternalServerErrorException,
   Post,
   Req,
   Headers,
   Query,
+  Get,
+  Res,
 } from '@nestjs/common';
-import { Request } from 'express';
-import { StorageService } from 'src/storage/storage.service';
+import { Request, Response } from 'express';
 import { UploadVideoDto } from './dtos/upload-video.dto';
 import * as mime from 'mime-types';
-
+import { VideoThumbnailDto } from './dtos/get-video-thumbnail.dto';
+import { VideoService } from './video.service';
+import { pipeline } from 'node:stream/promises';
 @Controller('video')
 export class VideoController {
-  constructor(private storageService: StorageService) {}
+  constructor(private videoService: VideoService) {}
 
   @Post('/upload')
   async uploadVideo(
@@ -23,6 +25,36 @@ export class VideoController {
   ) {
     const { fileName } = uploadVideoDto;
     const ext = mime.extension(contentType);
-    return await this.storageService.uploadFile(req, `${fileName}.${ext}`);
+    return await this.videoService.uploadVideo(req, fileName, ext);
+  }
+
+  @Get('/thumbnail')
+  async getThumbnail(
+    @Query() videoThumbnailDto: VideoThumbnailDto,
+    @Res() response: Response,
+  ) {
+    const { fileName } = videoThumbnailDto;
+
+    response.setHeader('Content-Type', mime.lookup('.png'));
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename=thumbnail.png`,
+    );
+
+    try {
+      const thumbnailStream =
+        await this.videoService.getThumbnailStream(fileName);
+
+      const cleanup = () => {
+        thumbnailStream.destroy();
+      };
+
+      response.on('close', cleanup);
+      response.on('finish', cleanup);
+
+      await pipeline(thumbnailStream, response);
+    } catch (error) {
+      response.end();
+    }
   }
 }

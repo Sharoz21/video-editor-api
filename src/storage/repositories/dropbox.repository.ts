@@ -1,7 +1,11 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { StorageRepositoryInterface } from '../interfaces/storage.interface';
 import { ConfigService } from '@nestjs/config';
-import { Dropbox } from 'dropbox';
+import { Dropbox, DropboxResponseError } from 'dropbox';
 import { Readable } from 'stream';
 
 @Injectable()
@@ -58,6 +62,39 @@ export class DropboxRepository implements StorageRepositoryInterface {
       throw new InternalServerErrorException(
         err?.message || 'Failed to upload video to Dropbox',
       );
+    }
+  }
+
+  async getDownloadableLink(fileName: string): Promise<string> {
+    const path = `/uploads/${fileName}`;
+    let url: string | undefined = undefined;
+
+    try {
+      const sharedLinkResp = await this.dbx.sharingCreateSharedLinkWithSettings(
+        {
+          path,
+        },
+      );
+      url = sharedLinkResp.result.url;
+    } catch (err) {
+      if (err instanceof DropboxResponseError) {
+        if (err.status === 409) {
+          const sharedLinkResp = await this.dbx.sharingListSharedLinks({
+            path,
+            direct_only: true,
+          });
+
+          url = sharedLinkResp.result.links[0].url;
+        }
+      }
+    } finally {
+      if (!url)
+        throw new NotFoundException(
+          'Failed to create a downloadable link, Please ensure the file name is correct.',
+        );
+      url = url.replace(/(\?|&)dl=0/, '$1dl=1');
+      if (!url.includes('dl=1')) url = `${url}?dl=1`;
+      return url;
     }
   }
 }

@@ -26,36 +26,38 @@ export class DropboxRepository implements StorageRepositoryInterface {
 
       for await (let chunk of fileStream) {
         buff = Buffer.concat([buff, chunk]);
+        while (buff.length >= this.CHUNK_SIZE) {
+          const chunkToSend = buff.subarray(0, this.CHUNK_SIZE);
+          buff = buff.subarray(this.CHUNK_SIZE);
 
-        if (buff.length >= this.CHUNK_SIZE) {
           if (!session_id) {
             const uploadSessionStartResp =
               await this.dbx.filesUploadSessionStart({
-                contents: buff,
+                contents: chunkToSend,
               });
             session_id = uploadSessionStartResp?.result?.session_id;
           } else {
             await this.dbx.filesUploadSessionAppendV2({
-              contents: buff,
+              contents: chunkToSend,
               cursor: { offset, session_id },
             });
           }
-          offset += buff.length;
-          buff = Buffer.alloc(0);
+          offset += chunkToSend.length;
         }
       }
 
-      if (buff.length > 0)
-        await this.dbx.filesUploadSessionFinish({
-          commit: { path: `/uploads/${fileName}` },
-          cursor: { session_id: session_id as string, offset },
+      if (!session_id) {
+        await this.dbx.filesUpload({
+          path: `/uploads/${fileName}`,
           contents: buff,
         });
-      else
+      } else {
         await this.dbx.filesUploadSessionFinish({
           commit: { path: `/uploads/${fileName}` },
-          cursor: { session_id: session_id as string, offset },
+          cursor: { session_id, offset },
+          ...(buff.length > 0 ? { contents: buff } : {}),
         });
+      }
 
       return { message: `${fileName} Uploaded Successfully` };
     } catch (err) {
@@ -81,17 +83,12 @@ export class DropboxRepository implements StorageRepositoryInterface {
         if (err.status === 409) {
           const sharedLinkResp = await this.dbx.sharingListSharedLinks({
             path,
-            direct_only: true,
           });
-
           url = sharedLinkResp.result.links[0].url;
         }
       }
     } finally {
-      if (!url)
-        throw new NotFoundException(
-          'Failed to create a downloadable link, Please ensure the file name is correct.',
-        );
+      if (!url) throw new NotFoundException('Failed to download file');
       url = url.replace(/(\?|&)dl=0/, '$1dl=1');
       if (!url.includes('dl=1')) url = `${url}?dl=1`;
       return url;

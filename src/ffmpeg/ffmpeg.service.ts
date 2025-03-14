@@ -40,4 +40,41 @@ export class FfmpegService {
 
     return process.stdout;
   }
+
+  createResizeStream(
+    filePath: string,
+    width: number,
+    height: number,
+  ): Readable {
+    const process = spawn('ffmpeg', [
+      '-i',
+      filePath,
+      '-vf',
+      `scale=${width}:${height}`,
+      '-c:v',
+      'libx264',
+      '-f',
+      'matroska',
+      'pipe:1',
+    ]);
+
+    process.on('error', (err) => {
+      process.stdout.emit('error', err);
+    });
+
+    process.on('exit', (code) => {
+      if (code !== 0) {
+        const error = new Error(`FFmpeg exited with code ${code}`);
+        process.stdout.emit('error', error);
+      }
+    });
+
+    process.stdout.on('end', () => {
+      if (!process.killed) {
+        process.kill();
+      }
+    });
+
+    return process.stdout;
+  }
 }

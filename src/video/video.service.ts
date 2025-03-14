@@ -10,7 +10,7 @@ export class VideoService {
     private ffmpegService: FfmpegService,
   ) {}
 
-  async uploadVideo(req: Request, fileName: string, extension: string) {
+  async upload(req: Request, fileName: string, extension: string) {
     return await this.storageService.uploadFile(
       req,
       `${fileName}.${extension}`,
@@ -20,5 +20,20 @@ export class VideoService {
   async getThumbnailStream(fileName: string) {
     const filePath = await this.storageService.getDownloadableLink(fileName);
     return this.ffmpegService.createThumbnailStream(filePath);
+  }
+
+  async resize(fileName: string, width: number, height: number) {
+    const filePath = await this.storageService.getDownloadableLink(fileName);
+
+    const resizeStreamReadable = await this.ffmpegService.createResizeStream(
+      filePath,
+      width,
+      height,
+    );
+
+    return await this.storageService.uploadFile(
+      resizeStreamReadable,
+      `${fileName.split('.')[0]}-${width}x${height}.mp4`,
+    );
   }
 }

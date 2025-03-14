@@ -13,19 +13,20 @@ import * as mime from 'mime-types';
 import { VideoThumbnailDto } from './dtos/get-video-thumbnail.dto';
 import { VideoService } from './video.service';
 import { pipeline } from 'node:stream/promises';
+import { ResizeVideoDto } from './dtos/resize-video.dto';
 @Controller('video')
 export class VideoController {
   constructor(private videoService: VideoService) {}
 
   @Post('/upload')
-  async uploadVideo(
+  async upload(
     @Req() req: Request,
     @Query() uploadVideoDto: UploadVideoDto,
     @Headers('content-type') contentType: string,
   ) {
     const { fileName } = uploadVideoDto;
     const ext = mime.extension(contentType);
-    return await this.videoService.uploadVideo(req, fileName, ext);
+    return await this.videoService.upload(req, fileName, ext);
   }
 
   @Get('/thumbnail')
@@ -56,5 +57,11 @@ export class VideoController {
     } catch (error) {
       response.end();
     }
+  }
+
+  @Post('/resize')
+  async resize(@Query() resizeVideoDto: ResizeVideoDto) {
+    const { fileName, width, height } = resizeVideoDto;
+    return await this.videoService.resize(fileName, width, height);
   }
 }

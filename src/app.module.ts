@@ -1,13 +1,28 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { VideoModule } from './video/video.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StorageModule } from './storage/storage.module';
 import { FfmpegModule } from './ffmpeg/ffmpeg.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), VideoModule, StorageModule, FfmpegModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => ({
+        connection: {
+          host: config.get('REDIS_HOST'),
+          port: config.get('REDIS_PORT'),
+        },
+      }),
+    }),
+    VideoModule,
+    StorageModule,
+    FfmpegModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

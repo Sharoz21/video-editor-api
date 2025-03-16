@@ -64,4 +64,9 @@ export class VideoController {
     const { fileName, width, height } = resizeVideoDto;
     return await this.videoService.resize(fileName, width, height);
   }
+
+  @Get('/resize/status')
+  async resizeStatus(@Query('jobId') jobId: string) {
+    return await this.videoService.resizeStatus(jobId);
+  }
 }

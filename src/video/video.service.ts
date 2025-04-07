@@ -45,4 +45,13 @@ export class VideoService {
     if (!job) throw new NotFoundException('No job not found.');
     return { status: await job.getState() };
   }
+
+  async extractAudio(fileName: string) {
+    const filePath = await this.storageService.getDownloadableLink(fileName);
+    const audioStream = this.ffmpegService.createAudioStream(filePath);
+    return await this.storageService.uploadFile(
+      audioStream,
+      `${fileName?.split('.')[0] ?? 'test'}.wav`,
+    );
+  }
 }

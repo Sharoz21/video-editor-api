@@ -69,4 +69,10 @@ export class VideoController {
   async resizeStatus(@Query('jobId') jobId: string) {
     return await this.videoService.resizeStatus(jobId);
   }
+
+  @Post('/extract-audio')
+  async extractAudio(@Query() extractVideoAudioDto: VideoThumbnailDto) {
+    const { fileName } = extractVideoAudioDto;
+    return await this.videoService.extractAudio(fileName);
+  }
 }

@@ -5,6 +5,7 @@ import { StorageModule } from 'src/storage/storage.module';
 import { FfmpegModule } from 'src/ffmpeg/ffmpeg.module';
 import { BullModule } from '@nestjs/bullmq';
 import { VideoConsumer } from './video.consumer';
+import { OpenAiModule } from 'src/open-ai/open-ai.module';
 
 @Module({
   providers: [VideoService, VideoConsumer],
@@ -15,6 +16,7 @@ import { VideoConsumer } from './video.consumer';
     }),
     StorageModule,
     FfmpegModule,
+    OpenAiModule,
   ],
 })
 export class VideoModule {}

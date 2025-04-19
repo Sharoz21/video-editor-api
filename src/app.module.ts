@@ -6,6 +6,7 @@ import { VideoModule } from './video/video.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StorageModule } from './storage/storage.module';
 import { FfmpegModule } from './ffmpeg/ffmpeg.module';
+import { OpenAiModule } from './open-ai/open-ai.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { FfmpegModule } from './ffmpeg/ffmpeg.module';
     VideoModule,
     StorageModule,
     FfmpegModule,
+    OpenAiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

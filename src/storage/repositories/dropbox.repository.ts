@@ -7,6 +7,7 @@ import { StorageRepositoryInterface } from '../interfaces/storage.interface';
 import { ConfigService } from '@nestjs/config';
 import { Dropbox, DropboxResponseError } from 'dropbox';
 import { Readable } from 'stream';
+import axios, { AxiosResponse } from 'axios';
 
 @Injectable()
 export class DropboxRepository implements StorageRepositoryInterface {
@@ -93,5 +94,22 @@ export class DropboxRepository implements StorageRepositoryInterface {
       if (!url.includes('dl=1')) url = `${url}?dl=1`;
       return url;
     }
+  }
+
+  async getFileStream(fileName: string): Promise<Readable> {
+    const accessToken = this.configService.get('DROPBOX_ACCESS_TOKEN');
+
+    const response: AxiosResponse<Readable> = await axios({
+      method: 'POST',
+      url: 'https://content.dropboxapi.com/2/files/download',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Dropbox-API-Arg': `{\"path\":\"/uploads/${fileName}\"}`,
+        'Content-Type': 'application/octet-stream',
+      },
+      responseType: 'stream',
+    });
+
+    return response.data;
   }
 }

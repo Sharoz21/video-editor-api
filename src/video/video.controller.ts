@@ -75,4 +75,10 @@ export class VideoController {
     const { fileName } = extractVideoAudioDto;
     return await this.videoService.extractAudio(fileName);
   }
+
+  @Post('/add-subtitles')
+  async get(@Query() videoThumbnailDto: VideoThumbnailDto) {
+    const { fileName } = videoThumbnailDto;
+    return await this.videoService.addSubtitles(fileName);
+  }
 }
